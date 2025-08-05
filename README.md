@@ -1,6 +1,6 @@
 # tokio-aws-lc
 
-An implementation of SSL streams for Tokio built on top of the [`aws-lc-sys` crate]
+An implementation of SSL streams for Tokio built on top of `aws-lc-sys`
 
 Based on `tokio-openssl`
 
