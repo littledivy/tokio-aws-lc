@@ -11,7 +11,7 @@ An implementation of SSL streams for Tokio backed by AWS-LC
 
 [dependencies]
 tokio = "1.0"
-aws-lc-sys = { version = "0.26.0", features = ["ssl"] }
+aws-lc-sys = { version = "0.30.0", features = ["ssl"] }
 bitflags = "*"
 libc = "*"
 
