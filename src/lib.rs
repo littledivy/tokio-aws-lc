@@ -120,7 +120,9 @@ mod ssl {
             if ret > 0 {
                 Ok(readbytes)
             } else {
-                Err(Error::Ssl(unsafe { ffi::ERR_get_error() }))
+                Err(Error::Ssl(unsafe {
+                    ffi::SSL_get_error(self.ssl, ret) as u32
+                }))
             }
         }
 
@@ -131,11 +133,14 @@ mod ssl {
         /// No portion of `buf` will be de-initialized by this method. If the method returns `Ok(n)`,
         /// then the first `n` bytes of `buf` are guaranteed to be initialized.
         pub fn read_uninit(&mut self, buf: &mut [MaybeUninit<u8>]) -> io::Result<usize> {
-            loop {
-                match self.ssl_read_uninit(buf) {
-                    Ok(n) => return Ok(n),
-                    _ => todo!("Lol"),
+            match self.ssl_read_uninit(buf) {
+                Ok(n) => Ok(n),
+                Err(ref e) if e.code() == ErrorCode::ZERO_RETURN => Ok(0),
+                Err(ref e) if e.code() == ErrorCode::SYSCALL => Ok(0),
+                Err(ref e) if e.code() == ErrorCode::WANT_READ => {
+                    Err(io::Error::from(io::ErrorKind::WouldBlock))
                 }
+                Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
             }
         }
 
@@ -152,7 +157,9 @@ mod ssl {
             if ret > 0 {
                 Ok(written)
             } else {
-                Err(Error::Ssl(unsafe { ffi::ERR_get_error() }))
+                Err(Error::Ssl(unsafe {
+                    ffi::SSL_get_error(self.ssl, ret) as u32
+                }))
             }
         }
 
@@ -236,6 +243,20 @@ mod ssl {
             crate::ErrorCode(match self {
                 Error::Ssl(code) => *code as _,
             })
+        }
+    }
+
+    impl std::fmt::Display for Error {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            match self {
+                Error::Ssl(code) => write!(f, "SSL error: {}", code),
+            }
+        }
+    }
+
+    impl std::error::Error for Error {
+        fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            None
         }
     }
 }

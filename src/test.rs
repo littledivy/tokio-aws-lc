@@ -8,26 +8,16 @@ use tokio::net::{TcpListener, TcpStream};
 
 #[tokio::test]
 async fn google() {
-    let addr = "httpbin.org:443".to_socket_addrs().unwrap().next().unwrap();
+    let addr = "google.com:443".to_socket_addrs().unwrap().next().unwrap();
     println!("Connecting to: {}", addr);
     let stream = TcpStream::connect(&addr).await.unwrap();
     println!("TCP connection established");
 
-    /*let ssl = SslConnector::builder(SslMethod::tls())
-    .unwrap()
-    .build()
-    .configure()
-    .unwrap()
-    .into_ssl("google.com")
-    .unwrap();*/
     let ssl = unsafe {
         let ctx = ffi::SSL_CTX_new(ffi::TLS_method());
         if ctx.is_null() {
             panic!("Failed to create SSL context");
         }
-
-        // Disable verification for testing
-        ffi::SSL_CTX_set_verify(ctx, ffi::SSL_VERIFY_NONE, None);
 
         // Set up cipher suites
         ffi::SSL_CTX_set_cipher_list(ctx, b"HIGH:!aNULL:!MD5\0".as_ptr() as *const _);
@@ -38,7 +28,7 @@ async fn google() {
         }
 
         // Set hostname for SNI
-        ffi::SSL_set_tlsext_host_name(ssl, b"httpbin.org\0".as_ptr() as *const _);
+        ffi::SSL_set_tlsext_host_name(ssl, b"google.com\0".as_ptr() as *const _);
         ffi::SSL_set_connect_state(ssl);
 
         // Free the context as it's not needed after SSL object creation
